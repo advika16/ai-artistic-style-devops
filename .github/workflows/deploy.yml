@@ -1,0 +1,34 @@
+name: AI Artistic Style CI
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  test-ai-service:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Pull Docker image
+        run: docker pull urmsandeep/ai-artistic-style-service
+
+      - name: Run service
+        run: |
+          docker run -d --name ai-style -p 5001:5001 urmsandeep/ai-artistic-style-service
+          sleep 40
+
+      - name: Test API
+        run: |
+          curl -X POST http://localhost:5001/styleTransfer \
+               -F "image=@input.jpg" \
+               --output styled_ci.jpg
+
+      - name: Verify output file
+        run: ls -lh styled_ci.jpg || echo "File not created"
+
+      - name: Stop container
+        if: always()
+        run: docker stop ai-style
